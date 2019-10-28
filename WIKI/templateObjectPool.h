@@ -3,62 +3,56 @@
 
 using namespace std;
 
-template <typename T> class ObjectPool	//N goes for number of objets
+template <typename T, int N> class ObjectPool				//N es el número de objetos T que tendrá el pool
 {
 private:
-	static ObjectPool<T>* singleton = nullptr;
-	ObjectPool(int N);	//constructor privado
-	T* list;
-	vector<bool> free;
-	unsigned size;
+	ObjectPool();											//constructor privado pues ObjectPool es un singleton
+	inline static ObjectPool<T, N>* singleton = nullptr;	//guarda el único pool de N objetos de tipo T.
+
+	T object[N];			//arreglo de objetos T
+	vector<bool> isFree;	//vector asociado al arreglo de objetos, indicando si está o no libre
 
 public:
-	~ObjectPool();
-	inline static ObjectPool<T>* getPool()
+	inline static ObjectPool<T,N>* getPool(void)	//función estática para obtener la única instancia del objectPool
 	{
 		if (singleton == nullptr)
 		{
-			singleton = (ObjectPool) ::new ObjectPool<T>;
+			singleton = (ObjectPool *) ::new ObjectPool<T, N>;
 		}
 		return singleton;
 	}
-	T* getObject(void);
-	void storeObject(T*);
+	T* getObject(void);		//devuelve un objeto de tipo T si hay alguno libre
+	void storeObject(T*);	//guarda en el pool un objeto que ya no se está usando
 
 };
 
-template <typename T> ObjectPool<T>::ObjectPool(int N)
-	: free(N,true)		//todos libres
-{
-	list = ::new T[N];		
-	size = N;
-}
+template <typename T, int N> ObjectPool<T, N>::ObjectPool()
+	: isFree(N, true) //todos libres al principio
+{}
 
-template <typename T> ObjectPool<T>::~ObjectPool()
+template <typename T, int N> 
+T* ObjectPool<T, N>::getObject(void)
 {
-	::delete[] list;
-}
-
-template <typename T> T* ObjectPool<T>::getObject(void)
-{
-	for (unsigned i = 0; i < size; i++ )
+	for (int i = 0; i < N; i++)		//revisa todos los objetos
 	{
-		if (free[i] == true)
+		if (isFree[i] == true)		//si encuentra uno libre
 		{
-			free[i] = false;
-			return list+i;
+			isFree[i] = false;		//lo ocupa
+			return object + i;		//y lo entrega
 		}
 	}
-	return nullptr;
+	return nullptr;					//devuelve null si no hay ninguno libre
 }
 
-template <typename T> void ObjectPool<T>::storeObject(T* obj)
+template <typename T, int N> 
+void ObjectPool<T, N>::storeObject(T* obj)
 {
-	for (unsigned i = 0 ; i < size; i++ )
+	for ( int i = 0; i < N; i++ )	//revisa todos los objetos
 	{
-		if (obj == list+i)
+		if (obj == (object+i) )		//si lo encuentra
 		{
-			free[i] = true;
+			isFree[i] = true;		//lo libera
 		}
 	}
 }
+
